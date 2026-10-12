@@ -140,6 +140,10 @@ def put(sock: socket.socket, name: str, data: bytes) -> None:
             expect_response(sock, "PUT")
             first = False
 
+    # The E2 accepts the PUT, then commonly hangs instead of replying to
+    # OBEX DISCONNECT. Do not hold the Bluetooth link open for the transfer
+    # socket's full 120-second I/O timeout.
+    sock.settimeout(3)
     sock.sendall(bytes([0x81, 0x03, 0x00, 0x00]))
     try:
         expect_response(sock, "DISCONNECT")
@@ -201,8 +205,8 @@ def main() -> int:
         return 1
 
     try:
-        print(f"sending {name} ({len(data)} bytes) -> {addr}")
-        print("-> WATCH THE PALM: tap Accept/Receive when it prompts", file=sys.stderr)
+        print(f"sending {name} ({len(data)} bytes) -> {addr}", flush=True)
+        print("-> WATCH THE PALM: tap Accept/Receive when it prompts", file=sys.stderr, flush=True)
         put(sock, name, data)
         print("OK: file accepted")
         return 0
